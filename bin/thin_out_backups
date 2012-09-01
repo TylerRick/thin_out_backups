@@ -1,0 +1,178 @@
+#!/usr/bin/env ruby
+# vim: textwidth=150
+
+=begin To Do
+Add --duplicates/--dups option, that when present deletes all duplicate files in a directory
+
+Add --max-size option: keeps deleting until the du -s #{dir} reports that it is beneath that threshold.
+What order should it delete? Oldest first?
+After each deletion, checks if it's reached (below) max size yet (just check filesize before deleting and then subtract that from a running total -- faster than doing a du over and over).
+Before any other deletes, it should search for/delete duplicates. If --duplicates option present, will do the search even if already below max size.
+=end
+
+require 'getoptlong'
+#require 'rubygems'
+require 'facets'
+require_local 'thin_out_backups'
+
+def help
+  puts <<End
+Synopsis:
+---------
+
+thin_out_backups [options] dirs...
+
+Example:
+thin_out_backups --daily 5 --monthly 12 /path/to/backups
+
+
+thin_out_backups will keep the specified number of time-stamped copies from each "time bucket" and remove all older copies.
+
+So even if you don't actually make any weekly backups, as long as you make daily or hourly backups, you will at least *have* weekly backups which
+you can keep. This will let you keep, for example, *all* the weekly backups but only 6 days worth of daily backups.
+
+When you specify --weekly=3, it means go back for 3 weeks and keep one backup from each week.
+So it will keep the most recent file from the current week, the most recent file from the previous week, etc.
+
+Use a * instead of a number to go back all the way to the oldest [week] represented in that directory and keep 1 copy from each [week] visited
+along the way. Note that it usually only makes sense to do this for the largest time interval being used. (It wouldn't make any sense to say
+--hourly=* --daily=3 because the --daily=3 will cause no files to be kept that wouldn't already be kept due to the --hourly.)
+
+The same file may satisfy more than 1 quota. So if you set them all to 1, they will all be satisfied by the same file: the most recent backup in the
+directory. For that reason, 2 is probably the minimum you'd want to set any of these to.
+
+
+Options:
+--------
+  --help                   Print this message
+  --minutely/--hourly/--daily/--weekly/--monthly/--yearly quota/frequency  
+                           Keep n number of [daily] backups or * to keep all
+  --<custom-interval>=<n>
+  --force                  Don't ask for confirmation before deleting. Use this if you put this command in a crontab and you are very sure you know 
+                           what it will do.
+  --now                    Use a different date/time as now.
+  --get-time-from filename Takes the time from the filename. It must be present in the filename and formatted in %Y%m%dT%H%M format.
+  --get-time-from file_system
+                           Uses the mtime of the file.
+  --no-color               Use a different date/time as now.
+  --last/--latest          Take the last (latest) candidate in each time interval (default). 
+  --first/--earliest       Take the first (earliest) candidate in each time interval (not default).
+
+By default, days start at the beginning of day, weeks to beginning of week, etc.
+
+To do: 
+  --identical              Compares the md5 digest of each pair of files and removes any files that have the same (and therefore probably are identical) -- except for the oldest/newest one.
+  --consec-identical       Same as --identical except only checks and removes consecutive/neighboring files to see if they are identical.
+  --align=<?>
+      add option to align the time ranges (days, etc.) from "now" rather than at the beginning of the day, etc. So "day" would actually be "the most
+recent 24-hour period, beginning exactly 24 hours ago and ending right now".
+
+
+Format of quota/frequency
+-------------------------
+
+TODO: allow crontab-style specifiers like --hourly=2/4 to keep 2 4-hourly backups, or
+--hourly=*/12 to keep *all* 12-hourly backups (= keep 2 backups per day).
+
+
+How your files/directories must be organized
+--------------------------------------------
+
+Each directory is expected to contain only one type of backup -- with many "copies" of that backup accumulated over time -- not a mix of backups.
+
+These backups may be either files or directories. (rm -rf will be used to remove them)
+
+Within each directory, this program will take the n most recently created files in each "time bucket" and retain them while pruning/deleting *all* 
+other files in the directory.
+
+WARNING: If you have other stuff in that directory that you want to keep, be warned: it WILL be deleted by this script!
+
+TODO: let you specify a glob pattern for files that WILL be pruned; and/or add an --ignore option to specify file patterns to ignore = NOT subject to pruning = not delete
+
+For the moment, I require that the timestamp be in the filename itself, in "%Y%m%dT%H%M%S" format.
+TODO: add option to use the timestamp recorded in the file system rather than the timestamp from within the filename.
+
+Background
+----------
+
+This is useful when you have a cron job that continuously creates backups and dumps them in a certain directory and you want to keep that directory
+from becoming inordinately large. (Or quickly get it down to a smaller size now that it's grown extremely large and you've run out of room on the disk.)
+
+The idea is that you are more likely to want/need a recent backup than an older backup. Probably because you hope to become aware of whatever problem
+necessitates looking at/using/restoring from the backup very soon after the problem arises.
+
+So you want to keep a higher density of backups from recent times than you do from older times. The high density of recent backups ensures that you 
+have a higher likelihood of having a backup from very soon before the data became corrupt/whatever and needed to be restored.
+
+For example, if you have backups for every hour in the last 24 hours, and you discover that something got deleted/corrupted/etc. at 23:15 last night,
+then if you pull the most recent backup, say the 23:00 backup, it will be at most an hour before the time of the problem. So the amount of data that
+is lost is at most 1 hour's worth.
+
+As you go further back in time, however, you are less likely to need any backups from that time. But you may want to keep them around for historical
+or statistical or "just in case there is a subtle problem that we don't find out about until 6 months later and we need to be able to go back and
+determine how it happened and restore a certain chunk of data from that old pre-problem backup."
+
+Well, this tool will help you to keep around SOME old copies, without keep around as many as you keep of the more recent ones.
+
+End
+  exit 0
+end
+
+
+
+quotas = {}
+
+help if ARGV.empty?
+
+opts = GetoptLong.new(
+    [ '--minutely',                     GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--hourly',                       GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--daily',                        GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--weekly',                       GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--monthly',                      GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--yearly',                       GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--get-time-from',                GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--last',  '--latest',            GetoptLong::NO_ARGUMENT ],
+    [ '--first', '--earliest',          GetoptLong::NO_ARGUMENT ],
+    [ '--force', '-f',                  GetoptLong::NO_ARGUMENT ],
+    [ '--no-color',                     GetoptLong::NO_ARGUMENT ],
+    [ '--time-format',                  GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--pattern',                      GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--exclude',                      GetoptLong::REQUIRED_ARGUMENT ],
+    [ '--now',                          GetoptLong::REQUIRED_ARGUMENT ]
+)
+
+opts.each do | opt, arg |
+  case opt
+
+  when '--help'
+    help
+
+  when '--force', '-f'
+    RmExtraCopies.force = true
+
+  when '--no-color'
+    RmExtraCopies.color = false
+
+  when *RmExtraCopies.options.map {|o| "--#{o.to_s.gsub(/_/, '-')}"}
+    name = opt.gsub(/^--/, '').to_sym
+    RmExtraCopies.send("#{name}=", arg)
+
+  when *RmExtraCopies.allowed_bucket_names.map {|o| "--#{o}"}
+    name = opt.gsub(/^--/, '').to_sym
+    if arg == '*'
+      #quotas[name] = :all
+      quotas[name] = '*'
+    else
+      quotas[name] = arg.to_i
+    end
+  end
+end
+
+dirs = ARGV
+raise "Must specify at least one directory" if dirs.empty?
+dirs.each do |dir|
+  command = RmExtraCopies.new(dir, quotas)
+  command.run
+end
+
