@@ -15,5 +15,9 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = ThinOutBackups::Version
 
+  gem.add_dependency 'facets'
+  gem.add_dependency 'colored'
+  gem.add_dependency 'quality_extensions'
+
   gem.add_development_dependency 'rspec'
 end

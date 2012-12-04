@@ -38,6 +38,6 @@ Released under the MIT license. See License file.
 * thin_out_backup_dir
 * sparsen_dir
 * sparsify_dir
-* rm_extra_copies
+* [rm_extra_copies](https://github.com/TylerRick/command-line/blob/master/bin/rm_extra_copies) (previously published under this name)
 * prune_backups
 * trim_dir

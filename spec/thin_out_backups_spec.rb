@@ -1,8 +1,8 @@
 require 'tmpdir'
-require 'rubygems'
-require 'spec'
+#require 'rubygems'
+require 'rspec'
 require 'facets'
-require_local '../rm_extra_copies'
+require_relative '../lib/thin_out_backups'
 
 $now = Time.utc(2008,11,12, 7,45,19)
 
@@ -12,7 +12,7 @@ describe Time, "#beginning_of_week" do
   end
 end
 
-describe RmExtraCopies::Bucket, "time interval alignment" do
+describe ThinOutBackups::Command::Bucket, "time interval alignment" do
 
   def sample_quotas
     {
@@ -26,7 +26,7 @@ describe RmExtraCopies::Bucket, "time interval alignment" do
   end
 
   before do
-    @command = RmExtraCopies.new('bogus_dir', sample_quotas)
+    @command = ThinOutBackups::Command.new('bogus_dir', sample_quotas)
     @now = $now
     @command.stub!(:now).and_return(@now)
   end
@@ -48,61 +48,64 @@ end
 
 
 $command = <<End
-rm_extra_copies --force --daily=3 --weekly=3 --monthly=* \
+thin_out_backups --force --daily=3 --weekly=3 --monthly=* \
                 --now='#{$now.to_s_full}'\
-                ../rm_extra_copies_test_dir/db_dumps \
-                ../rm_extra_copies_test_dir/maildir
+                spec/test_dir/db_dumps \
+                spec/test_dir/maildir
 End
-describe RmExtraCopies, "when calling `#{$command}`" do
+describe ThinOutBackups::Command, "when calling `#{$command}`" do
   before do
-    Pathname.new("../rm_extra_copies_test_dir/").rmtree rescue nil
+    Pathname.new("spec/test_dir/").rmtree rescue nil
 
-    dir='../rm_extra_copies_test_dir/db_dumps/'
+    dir='spec/test_dir/db_dumps/'
     system "mkdir -p #{dir}"
     files = %w[
-    db_dump_20080808T0303.sql
-    db_dump_20080901T0303.sql
-    db_dump_20080910T0303.sql
-    db_dump_20081015T0303.sql
-    db_dump_20081016T0303.sql
-    db_dump_20081017T0303.sql
-    db_dump_20081018T0303.sql
-    db_dump_20081019T0303.sql
-    db_dump_20081020T0303.sql
-    db_dump_20081021T0303.sql
-    db_dump_20081022T0303.sql
-    db_dump_20081023T0303.sql
-    db_dump_20081024T0303.sql
-    db_dump_20081025T0303.sql
-    db_dump_20081026T0303.sql
-    db_dump_20081027T0303.sql
-    db_dump_20081028T0303.sql
-    db_dump_20081029T0303.sql
-    db_dump_20081030T0303.sql
-    db_dump_20081031T0303.sql
-    db_dump_20081101T0303.sql
-    db_dump_20081102T0303.sql
-    db_dump_20081103T0303.sql
-    db_dump_20081104T0303.sql
-    db_dump_20081105T0303.sql
-    db_dump_20081106T0303.sql
-    db_dump_20081107T0303.sql
-    db_dump_20081108T0303.sql
-    db_dump_20081109T0303.sql
-    db_dump_20081110T0303.sql
-    db_dump_20081111T0303.sql
-    db_dump_20081112T0303.sql
+    db_dump_2008-08-08T0303.sql
+    db_dump_2008-09-01T0303.sql
+    db_dump_2008-09-10T0303.sql
+    db_dump_2008-10-15T0303.sql
+    db_dump_2008-10-16T0303.sql
+    db_dump_2008-10-17T0303.sql
+    db_dump_2008-10-18T0303.sql
+    db_dump_2008-10-19T0303.sql
+    db_dump_2008-10-20T0303.sql
+    db_dump_2008-10-21T0303.sql
+    db_dump_2008-10-22T0303.sql
+    db_dump_2008-10-23T0303.sql
+    db_dump_2008-10-24T0303.sql
+    db_dump_2008-10-25T0303.sql
+    db_dump_2008-10-26T0303.sql
+    db_dump_2008-10-27T0303.sql
+    db_dump_2008-10-28T0303.sql
+    db_dump_2008-10-29T0303.sql
+    db_dump_2008-10-30T0303.sql
+    db_dump_2008-10-31T0303.sql
+    db_dump_2008-11-01T0303.sql
+    db_dump_2008-11-02T0303.sql
+    db_dump_2008-11-03T0303.sql
+    db_dump_2008-11-04T0303.sql
+    db_dump_2008-11-05T0303.sql
+    db_dump_2008-11-06T0303.sql
+    db_dump_2008-11-07T0303.sql
+    db_dump_2008-11-08T0303.sql
+    db_dump_2008-11-09T0303.sql
+    db_dump_2008-11-10T0303.sql
+    db_dump_2008-11-11T0303.sql
+    db_dump_2008-11-12T0303.sql
     ]
     files.each do |file|
+      Dir.getwd
+      #puts %(Dir.getwd=#{(Dir.getwd).inspect})
+      #puts %("touch #{dir}/#{file}"=#{("touch #{dir}/#{file}").inspect})
       system "touch #{dir}/#{file}"
     end
 
-    dir='../rm_extra_copies_test_dir/maildir/'
+    dir='spec/test_dir/maildir/'
     system "mkdir -p #{dir}"
     subdirs = %w[
-    20081109T0303
-    20081110T0303
-    20081111T0303
+    2008-11-09T0303
+    2008-11-10T0303
+    2008-11-11T0303
     ]
     subdirs.each do |subdir|
       system "mkdir -p #{dir}/#{subdir}"
@@ -110,17 +113,25 @@ describe RmExtraCopies, "when calling `#{$command}`" do
       system "touch    #{dir}/#{subdir}/some_other_folder"
     end
 
-    system $command
+    puts %($command=#{($command).inspect})
+    #system $command
     # TODO: also capture output of command and check it against expected
   end
 
   it "keeps/removes the correct files" do
-    #p Dir['../rm_extra_copies_test_dir/db_dumps/*'].to_a
-    Dir['../rm_extra_copies_test_dir/db_dumps/*'].should == ["../rm_extra_copies_test_dir/db_dumps/db_dump_20081112T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20081108T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20081031T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20081110T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20080808T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20081101T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20080910T0303.sql", "../rm_extra_copies_test_dir/db_dumps/db_dump_20081111T0303.sql"]
+    Dir['spec/test_dir/db_dumps/*'].should =~
+     ["spec/test_dir/db_dumps/db_dump_2008-11-12T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-08T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-10-31T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-10T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-08-08T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-01T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-09-10T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-11T0303.sql"]
   end
 
   after do
-    Pathname.new("../rm_extra_copies_test_dir/").rmtree rescue nil
+    #Pathname.new("spec/test_dir/").rmtree rescue nil
   end
 end
 

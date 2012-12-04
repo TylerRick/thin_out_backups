@@ -12,8 +12,8 @@ Before any other deletes, it should search for/delete duplicates. If --duplicate
 
 require 'getoptlong'
 #require 'rubygems'
-require 'facets'
-require_local 'thin_out_backups'
+#require 'facets'
+require 'thin_out_backups'
 
 def help
   puts <<End
@@ -28,7 +28,7 @@ thin_out_backups --daily 5 --monthly 12 /path/to/backups
 
 thin_out_backups will keep the specified number of time-stamped copies from each "time bucket" and remove all older copies.
 
-So even if you don't actually make any weekly backups, as long as you make daily or hourly backups, you will at least *have* weekly backups which
+So even if you don't actually make any weekly backups, as long as you make daily or hourly backups, you will still *have* weekly backups which
 you can keep. This will let you keep, for example, *all* the weekly backups but only 6 days worth of daily backups.
 
 When you specify --weekly=3, it means go back for 3 weeks and keep one backup from each week.
@@ -149,16 +149,16 @@ opts.each do | opt, arg |
     help
 
   when '--force', '-f'
-    RmExtraCopies.force = true
+    ThinOutBackups::Command.force = true
 
   when '--no-color'
-    RmExtraCopies.color = false
+    ThinOutBackups::Command.color = false
 
-  when *RmExtraCopies.options.map {|o| "--#{o.to_s.gsub(/_/, '-')}"}
+  when *ThinOutBackups::Command.options.map {|o| "--#{o.to_s.gsub(/_/, '-')}"}
     name = opt.gsub(/^--/, '').to_sym
-    RmExtraCopies.send("#{name}=", arg)
+    ThinOutBackups::Command.send("#{name}=", arg)
 
-  when *RmExtraCopies.allowed_bucket_names.map {|o| "--#{o}"}
+  when *ThinOutBackups::Command.allowed_bucket_names.map {|o| "--#{o}"}
     name = opt.gsub(/^--/, '').to_sym
     if arg == '*'
       #quotas[name] = :all
@@ -172,7 +172,7 @@ end
 dirs = ARGV
 raise "Must specify at least one directory" if dirs.empty?
 dirs.each do |dir|
-  command = RmExtraCopies.new(dir, quotas)
+  command = ThinOutBackups::Command.new(dir, quotas)
   command.run
 end
 
