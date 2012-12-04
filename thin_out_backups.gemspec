@@ -4,8 +4,8 @@ require File.expand_path('../lib/thin_out_backups/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Tyler Rick"]
   gem.email         = ["github.com@tylerrick.com"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
+  gem.summary       = %q{Thin out a directory full of backups, only keeping a specified number from each category (weekly, daily, etc.), and deleting the rest.}
+  gem.description   = gem.summary
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($\)

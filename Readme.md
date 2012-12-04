@@ -2,7 +2,7 @@
 
 Quickly and safely thin out a backups directory that's taking up too much hard disk space!
 
-`thin_out_backups` will keep the specified number of backups in each frequency category (weekely,
+`thin_out_backups` will keep the specified number of backups in each frequency category (weekly,
 daily, etc.) and delete the rest, keep the space requirements of your backups directory fairly
 constant over time. 
 
