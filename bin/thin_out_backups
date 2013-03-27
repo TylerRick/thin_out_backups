@@ -2,6 +2,8 @@
 # vim: textwidth=150
 
 =begin To Do
+Make it possible to run on a capistrano releases directory to only keep the n latest releases and delete the rest (just like cap deploy:cleanup). So you don't end up with a pile of 200 releases in that directory...
+
 Add --duplicates/--dups option, that when present deletes all duplicate files in a directory
 
 Add --max-size option: keeps deleting until the du -s #{dir} reports that it is beneath that threshold.
