@@ -6,6 +6,13 @@ require_relative '../lib/thin_out_backups'
 
 $now = Time.utc(2008,11,12, 7,45,19)
 
+describe '.time_format' do
+  subject { ThinOutBackups::Command.time_format }
+  it { 'db_dump_20080808T0303.sql'.should match subject }
+  it { 'db_dump_2008-08-08T0303.sql'.should match subject }
+  it { 'db_backup.2016-04-28T01:04.sql.gz'.should match subject }
+end
+
 describe Time, "#beginning_of_week" do
   it "should return a Sunday" do
     Time.utc(2008,11,12).beginning_of_week.should == Time.utc(2008,11,9)

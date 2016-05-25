@@ -42,7 +42,7 @@ class ThinOutBackups::Command
     puts "Using alternate now: #{@@now}"
   end
 
-  @@time_format = /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?/
+  @@time_format = /(\d{4})[^\d]?(\d{2})[^\d]?(\d{2})T(\d{2})[^\d]?(\d{2})[^\d]?(\d{2})?/
   @@time_format_parts = [:Y,:m,:d, :H,:M,:S]
   # TODO: Maybe use something like this for interpreting time, rather than a regexp? DateTime.strptime("27/Nov/2007:15:01:43 -0800", "%d/%b/%Y:%H:%M:%S %z")
   def self.time_format=(new)
