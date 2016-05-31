@@ -18,6 +18,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'facets'
   gem.add_dependency 'colored'
   gem.add_dependency 'quality_extensions'
+  gem.add_dependency 'activesupport'
 
   gem.add_development_dependency 'rspec'
 end

@@ -8,9 +8,11 @@ require 'delegate'
 
 #require 'rubygems'
 require 'facets/time'
+require 'facets/time/hence'
+require 'active_support/core_ext/time/calculations'
+require 'active_support/core_ext/date/calculations'
 require 'colored'
 require 'quality_extensions/module/attribute_accessors'
-require 'thin_out_backups/time_fixes'
 
 class ThinOutBackups::Command
   #---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -81,7 +83,7 @@ class ThinOutBackups::Command
     def start_time
       start_time = parent.now.dup
       if parent.align_at_beginning_of_time_interval
-        beginning_of_interval = 
+        beginning_of_interval =
           case unit
           when :minutes
             start_time.change(:sec => 0)
@@ -90,7 +92,7 @@ class ThinOutBackups::Command
           when :days
             start_time.change(:hour => 0)
           when :weeks
-            start_time.beginning_of_week
+            start_time.beginning_of_week(:sunday)
           when :months
             start_time.change(             :day => 1, :hour => 0)
           when :years

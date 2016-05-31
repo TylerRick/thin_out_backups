@@ -13,9 +13,9 @@ describe '.time_format' do
   it { 'db_backup.2016-04-28T01:04.sql.gz'.should match subject }
 end
 
-describe Time, "#beginning_of_week" do
+describe Time, "#beginning_of_week(:sunday)" do
   it "should return a Sunday" do
-    Time.utc(2008,11,12).beginning_of_week.should == Time.utc(2008,11,9)
+    Time.utc(2008,11,12).beginning_of_week(:sunday).should == Time.utc(2008,11,9)
   end
 end
 
@@ -56,7 +56,7 @@ end
 
 $command = <<End
 thin_out_backups --force --daily=3 --weekly=3 --monthly=* \
-                --now='#{$now.to_s_full}'\
+                --now='#{$now.strftime("%Y-%m-%d %H:%M:%S")}'\
                 spec/test_dir/db_dumps \
                 spec/test_dir/maildir
 End
