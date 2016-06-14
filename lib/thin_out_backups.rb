@@ -8,9 +8,7 @@ require 'delegate'
 
 #require 'rubygems'
 require 'facets/time'
-require 'facets/time/shift'
-require 'active_support/core_ext/time/calculations'
-require 'active_support/core_ext/date/calculations'
+require 'active_support/time'
 require 'colored'
 require 'quality_extensions/module/attribute_accessors'
 
