@@ -8,7 +8,7 @@ require 'delegate'
 
 #require 'rubygems'
 require 'facets/time'
-require 'facets/time/hence'
+require 'facets/time/shift'
 require 'active_support/core_ext/time/calculations'
 require 'active_support/core_ext/date/calculations'
 require 'colored'
@@ -101,7 +101,7 @@ class ThinOutBackups::Command
             raise "unexpected unit #{unit}"
           end
         # We actually want to use the *next* interval (in the future) as our start_time because we will be using this as our max and going backwards in time...
-        beginning_of_interval.hence(1, unit)
+        beginning_of_interval.shift(1, unit)
       else
         start_time
       end
@@ -257,7 +257,7 @@ class ThinOutBackups::Command
       puts "Trying to fill bucket '#{bucket.name}' (quota: #{bucket.quota})...".magenta
 
       time_max = bucket.start_time
-      time_min = time_max.ago(1, bucket.unit)
+      time_min = time_max.shift(-1, bucket.unit)
 
       #puts "Earliest_file_time: #{earliest_file_time}"
       while time_max > earliest_file_time
@@ -276,8 +276,8 @@ class ThinOutBackups::Command
         end
 
         time_max = time_min
-        #puts "Stepping back from #{time_min} by 1 #{bucket.unit} => #{time_min.ago(1, bucket.unit)}"
-        time_min = time_min.ago(1, bucket.unit)
+        #puts "Stepping back from #{time_min} by 1 #{bucket.unit} => #{time_min.shift(-1, bucket.unit)}"
+        time_min = time_min.shift(-1, bucket.unit)
         (puts 'Filled quota!'.green; break) if bucket.satisfied?
       end
     end

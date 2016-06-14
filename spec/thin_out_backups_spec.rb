@@ -120,9 +120,9 @@ describe ThinOutBackups::Command, "when calling `#{$command}`" do
       system "touch    #{dir}/#{subdir}/some_other_folder"
     end
 
-    puts %($command=#{($command).inspect})
-    #system $command
-    # TODO: also capture output of command and check it against expected
+    #puts %($command=#{($command).inspect})
+    output = `#{$command}`
+    # TODO: also check output against expected
   end
 
   it "keeps/removes the correct files" do
