@@ -10,7 +10,7 @@ require 'delegate'
 require 'facets/time'
 require 'active_support/time'
 require 'colored'
-require 'quality_extensions/module/attribute_accessors'
+require 'active_support/core_ext/module/attribute_accessors'
 
 class ThinOutBackups::Command
   #---------------------------------------------------------------------------------------------------------------------------------------------------
