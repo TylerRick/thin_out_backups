@@ -61,7 +61,7 @@ class ThinOutBackups::Command
       @parent = parent
       @name = name
       (
-      raise "Invalid quota '#{quota}'" unless quota.is_a?(Fixnum) || quota =~ @@quota_format
+      raise "Invalid quota '#{quota}'" unless quota.is_a?(Integer) || quota =~ @@quota_format
       @quota = quota
       )
       @keepers = []
