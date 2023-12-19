@@ -1,21 +1,19 @@
 require 'tmpdir'
-#require 'rubygems'
 require 'rspec'
-require 'facets'
 require_relative '../lib/thin_out_backups'
 
 $now = Time.utc(2008,11,12, 7,45,19)
 
 describe '.time_format' do
   subject { ThinOutBackups::Command.time_format }
-  it { 'db_dump_20080808T0303.sql'.should match subject }
-  it { 'db_dump_2008-08-08T0303.sql'.should match subject }
-  it { 'db_backup.2016-04-28T01:04.sql.gz'.should match subject }
+  it { expect('db_dump_20080808T0303.sql').to match subject }
+  it { expect('db_dump_2008-08-08T0303.sql').to match subject }
+  it { expect('db_backup.2016-04-28T01:04.sql.gz').to match subject }
 end
 
 describe Time, "#beginning_of_week(:sunday)" do
   it "should return a Sunday" do
-    Time.utc(2008,11,12).beginning_of_week(:sunday).should == Time.utc(2008,11,9)
+    expect(Time.utc(2008,11,12).beginning_of_week(:sunday)).to eq(Time.utc(2008,11,9))
   end
 end
 
@@ -35,20 +33,20 @@ describe ThinOutBackups::Command::Bucket, "time interval alignment" do
   before do
     @command = ThinOutBackups::Command.new('bogus_dir', sample_quotas)
     @now = $now
-    @command.stub!(:now).and_return(@now)
+    allow(@command).to receive(:now).and_return(@now)
   end
 
   it "should use the time specified by our test" do
-    @command.now.should == @now
+    expect(@command.now).to eq(@now)
   end
 
   it "hour interval should start on the hour, etc." do
-    @command.bucket(:minutely).start_time.should == Time.utc(2008,11,12, 7,46,0)
-    @command.bucket(:hourly).  start_time.should == Time.utc(2008,11,12, 8,0,0)
-    @command.bucket(:daily).   start_time.should == Time.utc(2008,11,13, 0,0,0)
-    @command.bucket(:weekly).  start_time.should == Time.utc(2008,11,16, 0,0,0)
-    @command.bucket(:monthly). start_time.should == Time.utc(2008,12, 1, 0,0,0)
-    @command.bucket(:yearly).  start_time.should == Time.utc(2009, 1, 1, 0,0,0)
+    expect(@command.bucket(:minutely).start_time).to eq(Time.utc(2008,11,12, 7,46,0))
+    expect(@command.bucket(:hourly).  start_time).to eq(Time.utc(2008,11,12, 8,0,0))
+    expect(@command.bucket(:daily).   start_time).to eq(Time.utc(2008,11,13, 0,0,0))
+    expect(@command.bucket(:weekly).  start_time).to eq(Time.utc(2008,11,16, 0,0,0))
+    expect(@command.bucket(:monthly). start_time).to eq(Time.utc(2008,12, 1, 0,0,0))
+    expect(@command.bucket(:yearly).  start_time).to eq(Time.utc(2009, 1, 1, 0,0,0))
   end
 
 end
@@ -126,7 +124,7 @@ describe ThinOutBackups::Command, "when calling `#{$command}`" do
   end
 
   it "keeps/removes the correct files" do
-    Dir['spec/test_dir/db_dumps/*'].should =~
+    expect(Dir['spec/test_dir/db_dumps/*']).to match_array(
      ["spec/test_dir/db_dumps/db_dump_2008-11-12T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-11-08T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-10-31T0303.sql",
@@ -135,6 +133,7 @@ describe ThinOutBackups::Command, "when calling `#{$command}`" do
       "spec/test_dir/db_dumps/db_dump_2008-11-01T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-09-10T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-11-11T0303.sql"]
+    )
   end
 
   after do
