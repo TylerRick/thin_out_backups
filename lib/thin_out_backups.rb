@@ -5,13 +5,13 @@ require "thin_out_backups/version"
 require 'fileutils'
 require 'pathname'
 require 'delegate'
+require 'rainbow'
 
-#require 'rubygems'
 require 'facets/time'
 require 'active_support' # Without this, we get error when we try to cherry pick: undefined method `deprecator' for ActiveSupport:Module
 require 'active_support/time'
-require 'colored'
 require 'active_support/core_ext/module/attribute_accessors'
+
 
 class ThinOutBackups::Command
   #---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ class ThinOutBackups::Command
 
   #---------------------------------------------------------------------------------------------------------------------------------------------------
   # Options
-  @@options = [:get_time_from, :ignore_files ,:verbosity, :time_format, :now, :force, :no_color]
+  @@options = [:get_time_from, :ignore_files ,:verbosity, :time_format, :now, :force]
   mattr_reader :options
   mattr_accessor *@@options
 
@@ -34,13 +34,12 @@ class ThinOutBackups::Command
   @@ignore_files = nil
   @@verbosity = 1
   @@force = false
-  @@color = true
 
   @@now = Time.now
   def self.now=(new)
-    time = DateTime.strptime('2008-11-12 07:45:00', '%Y-%m-%d %H:%M:%S').to_time
-    @@now = new
-    puts "Using alternate now: #{@@now}"
+    time = DateTime.strptime(new, '%Y-%m-%d %H:%M:%S').to_time
+    @@now = time
+    puts "Using alternate now: #{@@now}" if @@verbosity >= 1
   end
 
   @@time_format = /(\d{4})[^\d]?(\d{2})[^\d]?(\d{2})T(\d{2})[^\d]?(\d{2})[^\d]?(\d{2})?/
@@ -181,7 +180,7 @@ class ThinOutBackups::Command
       @buckets[name] = Bucket.new(self, name, quota) unless quota.nil?
     end
 
-    puts "Processing #{@dir}/*".magenta
+    puts Rainbow("Processing #{@dir}/*").magenta
     files = Dir["#{@dir}/*"].map { |filename|
       file = File.new(filename)
     }
@@ -206,17 +205,13 @@ class ThinOutBackups::Command
     @buckets[name] or raise "unknown bucket '#{name}'"
   end
 
-  def now
-    Time.now
-  end
-
   def delete_non_keepers
     #raise "Didn't find any files to keep?!" unless keepers.any?
     files_with_times.each do |file|
       if (buckets = buckets_with_file(file)).any?
-        puts "#{file.full_path}: in buckets: #{buckets.map(&:name).join(', ')}".green
+        puts Rainbow("#{file.full_path}: in buckets: #{buckets.map(&:name).join(', ')}").green
       else
-        puts "#{file.full_path}: delete".red
+        puts Rainbow("#{file.full_path}: delete").red
       end
     end
 
@@ -253,31 +248,33 @@ class ThinOutBackups::Command
 
     # Fill each bucket until its quota is met
     buckets.each do |bucket|
-      puts "Trying to fill bucket '#{bucket.name}' (quota: #{bucket.quota})...".magenta
+      puts Rainbow("Trying to fill bucket '#{bucket.name}' (quota: #{bucket.quota})...").magenta if verbosity >= 1
 
       time_max = bucket.start_time
       time_min = time_max.shift(-1, bucket.unit)
 
       #puts "Earliest_file_time: #{earliest_file_time}"
       while time_max > earliest_file_time
-        print "Checking range (#{time_min} .. #{time_max})... ".yellow if verbosity >= 1
         new_keeper = files_with_times.detect {|file|
           #print "#{file}? "
           time_min <= file.time &&
                       file.time < time_max
         }
+        if verbosity >= 2 || (verbosity >= 1 && new_keeper)
+          print Rainbow("Checking range (#{time_min} .. #{time_max})... ").yellow
+        end
         if new_keeper
-          puts "found keeper #{new_keeper}".green if verbosity >= 1
+          puts Rainbow("found keeper #{new_keeper}").green if verbosity >= 1
           bucket.keep new_keeper
         else
-          #puts "found no keepers".red if verbosity >= 1
-          puts "" if verbosity >= 1
+          #puts Rainbow("found no keepers").red if verbosity >= 1
+          puts "" if verbosity >= 2
         end
 
         time_max = time_min
         #puts "Stepping back from #{time_min} by 1 #{bucket.unit} => #{time_min.shift(-1, bucket.unit)}"
         time_min = time_min.shift(-1, bucket.unit)
-        (puts 'Filled quota!'.green; break) if bucket.satisfied?
+        (puts Rainbow('Filled quota!').green; break) if bucket.satisfied?
       end
     end
 
