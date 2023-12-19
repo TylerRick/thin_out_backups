@@ -53,7 +53,8 @@ end
 
 
 $command = <<End
-thin_out_backups --force --daily=3 --weekly=3 --monthly=* \
+  ruby -Ilib bin/thin_out_backups --force --daily=3 --weekly=3 --monthly=* \
+                --no-color \
                 --now='#{$now.strftime("%Y-%m-%d %H:%M:%S")}'\
                 spec/test_dir/db_dumps \
                 spec/test_dir/maildir
@@ -118,21 +119,89 @@ describe ThinOutBackups::Command, "when calling `#{$command}`" do
       system "touch    #{dir}/#{subdir}/some_other_folder"
     end
 
-    #puts %($command=#{($command).inspect})
-    output = `#{$command}`
-    # TODO: also check output against expected
+    @output = `#{$command}`
+    expect($?.success?).to eq true
   end
 
-  it "keeps/removes the correct files" do
+  it do
+    #puts @output
+
+    expect(@output).to eq <<~End
+      Using alternate now: 2008-11-12 07:45:19
+      Processing spec/test_dir/db_dumps/*
+      Trying to fill bucket 'daily' (quota: 3)...
+      Checking range (2008-11-12 00:00:00 -0800 .. 2008-11-13 00:00:00 -0800)... found keeper db_dump_2008-11-12T0303.sql
+      Checking range (2008-11-11 00:00:00 -0800 .. 2008-11-12 00:00:00 -0800)... found keeper db_dump_2008-11-11T0303.sql
+      Checking range (2008-11-10 00:00:00 -0800 .. 2008-11-11 00:00:00 -0800)... found keeper db_dump_2008-11-10T0303.sql
+      Filled quota!
+      Trying to fill bucket 'weekly' (quota: 3)...
+      Checking range (2008-11-09 00:00:00 -0800 .. 2008-11-16 00:00:00 -0800)... found keeper db_dump_2008-11-12T0303.sql
+      Checking range (2008-11-02 00:00:00 -0700 .. 2008-11-09 00:00:00 -0800)... found keeper db_dump_2008-11-08T0303.sql
+      Checking range (2008-10-26 00:00:00 -0700 .. 2008-11-02 00:00:00 -0700)... found keeper db_dump_2008-11-01T0303.sql
+      Filled quota!
+      Trying to fill bucket 'monthly' (quota: *)...
+      Checking range (2008-11-01 23:00:00 -0700 .. 2008-12-02 00:00:00 -0800)... found keeper db_dump_2008-11-12T0303.sql
+      Checking range (2008-10-01 23:00:00 -0700 .. 2008-11-01 23:00:00 -0700)... found keeper db_dump_2008-11-01T0303.sql
+      Checking range (2008-09-01 23:00:00 -0700 .. 2008-10-01 23:00:00 -0700)... found keeper db_dump_2008-09-10T0303.sql
+      Checking range (2008-08-01 23:00:00 -0700 .. 2008-09-01 23:00:00 -0700)... found keeper db_dump_2008-09-01T0303.sql
+      spec/test_dir/db_dumps/db_dump_2008-11-12T0303.sql: in buckets: daily, weekly, monthly
+      spec/test_dir/db_dumps/db_dump_2008-11-11T0303.sql: in buckets: daily
+      spec/test_dir/db_dumps/db_dump_2008-11-10T0303.sql: in buckets: daily
+      spec/test_dir/db_dumps/db_dump_2008-11-09T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-08T0303.sql: in buckets: weekly
+      spec/test_dir/db_dumps/db_dump_2008-11-07T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-06T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-05T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-04T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-03T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-02T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-11-01T0303.sql: in buckets: weekly, monthly
+      spec/test_dir/db_dumps/db_dump_2008-10-31T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-30T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-29T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-28T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-27T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-26T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-25T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-24T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-23T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-22T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-21T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-20T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-19T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-18T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-17T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-16T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-10-15T0303.sql: delete
+      spec/test_dir/db_dumps/db_dump_2008-09-10T0303.sql: in buckets: monthly
+      spec/test_dir/db_dumps/db_dump_2008-09-01T0303.sql: in buckets: monthly
+      spec/test_dir/db_dumps/db_dump_2008-08-08T0303.sql: delete
+      Processing spec/test_dir/maildir/*
+      Trying to fill bucket 'daily' (quota: 3)...
+      Checking range (2008-11-11 00:00:00 -0800 .. 2008-11-12 00:00:00 -0800)... found keeper 2008-11-11T0303
+      Checking range (2008-11-10 00:00:00 -0800 .. 2008-11-11 00:00:00 -0800)... found keeper 2008-11-10T0303
+      Checking range (2008-11-09 00:00:00 -0800 .. 2008-11-10 00:00:00 -0800)... found keeper 2008-11-09T0303
+      Filled quota!
+      Trying to fill bucket 'weekly' (quota: 3)...
+      Checking range (2008-11-09 00:00:00 -0800 .. 2008-11-16 00:00:00 -0800)... found keeper 2008-11-11T0303
+      Trying to fill bucket 'monthly' (quota: *)...
+      Checking range (2008-11-01 23:00:00 -0700 .. 2008-12-02 00:00:00 -0800)... found keeper 2008-11-11T0303
+      spec/test_dir/maildir/2008-11-11T0303: in buckets: daily, weekly, monthly
+      spec/test_dir/maildir/2008-11-10T0303: in buckets: daily
+      spec/test_dir/maildir/2008-11-09T0303: in buckets: daily
+    End
+
+    # It keeps/removes the correct files
     expect(Dir['spec/test_dir/db_dumps/*']).to match_array(
-     ["spec/test_dir/db_dumps/db_dump_2008-11-12T0303.sql",
-      "spec/test_dir/db_dumps/db_dump_2008-11-08T0303.sql",
-      "spec/test_dir/db_dumps/db_dump_2008-10-31T0303.sql",
-      "spec/test_dir/db_dumps/db_dump_2008-11-10T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-08-08T0303.sql",
-      "spec/test_dir/db_dumps/db_dump_2008-11-01T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-09-01T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-09-10T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-10-31T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-01T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-08T0303.sql",
+      "spec/test_dir/db_dumps/db_dump_2008-11-10T0303.sql",
       "spec/test_dir/db_dumps/db_dump_2008-11-11T0303.sql"]
+     ["spec/test_dir/db_dumps/db_dump_2008-11-12T0303.sql",
     )
   end
 

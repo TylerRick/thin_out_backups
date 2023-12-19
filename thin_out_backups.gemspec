@@ -16,7 +16,7 @@ Gem::Specification.new do |gem|
   gem.version       = ThinOutBackups::Version
 
   gem.add_dependency 'facets'
-  gem.add_dependency 'colored'
+  gem.add_dependency 'rainbow'
   gem.add_dependency 'activesupport'
 
   gem.add_development_dependency 'rspec'

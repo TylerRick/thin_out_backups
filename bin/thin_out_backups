@@ -13,8 +13,6 @@ Before any other deletes, it should search for/delete duplicates. If --duplicate
 =end
 
 require 'getoptlong'
-#require 'rubygems'
-#require 'facets'
 require 'thin_out_backups'
 
 def help
@@ -154,7 +152,7 @@ opts.each do | opt, arg |
     ThinOutBackups::Command.force = true
 
   when '--no-color'
-    ThinOutBackups::Command.color = false
+    Rainbow.enabled = false
 
   when *ThinOutBackups::Command.options.map {|o| "--#{o.to_s.gsub(/_/, '-')}"}
     name = opt.gsub(/^--/, '').to_sym
