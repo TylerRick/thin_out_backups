@@ -8,6 +8,7 @@ require 'delegate'
 
 #require 'rubygems'
 require 'facets/time'
+require 'active_support' # Without this, we get error when we try to cherry pick: undefined method `deprecator' for ActiveSupport:Module
 require 'active_support/time'
 require 'colored'
 require 'active_support/core_ext/module/attribute_accessors'
